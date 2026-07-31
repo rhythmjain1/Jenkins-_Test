@@ -1,0 +1,50 @@
+package com.Learning.Project;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/employees")
+public class EmpController {
+
+    @Autowired
+    EmployeeService employeeService;
+
+    //Get all Employee
+    @GetMapping("/") // localhost:8080/getAllEmployees
+    public List<Employee> getAllEmployees() {
+        return employeeService.getAllEmployees();
+    }
+//
+//    @GetMapping("{id}")
+//    public Employee getEmployeeId(@PathVariable("id") String id){
+//        System.out.println(id);
+//        return employeeService.getEmployeeId(id);
+//    }
+//
+    @PostMapping("addEmployee") // localhost:8080/addEmployee
+    public Employee addEmployee(@RequestBody Employee employee){
+        return employeeService.saveEmployee(employee);
+    }
+//
+//    @PutMapping("updateEmployee") // localhost:8080/updateEmployee
+//    public Employee updateEmployee(@RequestBody Employee employee){
+//        System.out.println("Inside Put");
+//        System.out.println(employee.getEmpl_id());
+//        return employeeService.updateEmployee(employee);
+//    }
+//
+//    @DeleteMapping("deleteEmployee/{id}")
+//    public void deleteEmployee(@PathVariable ("id") String id){
+//        System.out.println(id);
+//        Employee employee = employeeService.getEmployeeId(id);
+//        if (employee != null) {
+//            employeeService.deleteEmployee(employee);
+//        } else {
+//            System.out.println("Employee with ID " + id + " not found.");
+//        }
+//    }
+}
