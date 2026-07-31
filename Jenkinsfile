@@ -1,49 +1,87 @@
 pipeline {
-
     agent any
 
+    options {
+        timestamps()
+    }
+
     environment {
-        GIT_URL = 'https://github.com/rhythmjain1/Jenkins-_Test.git'
-        BRANCH = 'main'
+        COMPOSE_FILE = 'docker-compose.yml'
+        COMPOSE_PROJECT_NAME = 'rhythm_jenkins_test'
     }
 
     stages {
 
-        stage('Checkout Source') {
+        stage('Checkout') {
             steps {
-                git branch: "${BRANCH}",
-                    url: "${GIT_URL}"
+                checkout scm
             }
         }
 
-        stage('Build Spring Boot') {
+        stage('Preflight') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'java -version'
+                sh 'docker --version'
+                sh 'docker compose version || docker-compose --version'
             }
         }
 
-        stage('Stop Existing Containers') {
+        stage('Test') {
             steps {
-                sh 'docker-compose down || true'
+                sh './mvnw clean test'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Package') {
             steps {
-                sh 'docker-compose build --no-cache'
+                sh './mvnw -DskipTests package'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'docker-compose up -d'
+                sh '''
+                    if docker compose version >/dev/null 2>&1; then
+                        COMPOSE_CMD="docker compose"
+                    else
+                        COMPOSE_CMD="docker-compose"
+                    fi
+
+                    $COMPOSE_CMD -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} down --remove-orphans || true
+                    $COMPOSE_CMD -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} build --pull
+                    $COMPOSE_CMD -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} up -d --remove-orphans
+                '''
             }
         }
 
         stage('Verify') {
             steps {
-                sh 'docker ps'
+                sh '''
+                    if docker compose version >/dev/null 2>&1; then
+                        COMPOSE_CMD="docker compose"
+                    else
+                        COMPOSE_CMD="docker-compose"
+                    fi
+
+                    $COMPOSE_CMD -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} ps
+                    docker ps
+                '''
             }
+        }
+    }
+
+    post {
+        failure {
+            sh '''
+                if docker compose version >/dev/null 2>&1; then
+                    COMPOSE_CMD="docker compose"
+                else
+                    COMPOSE_CMD="docker-compose"
+                fi
+
+                $COMPOSE_CMD -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} ps || true
+                $COMPOSE_CMD -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} logs --tail=100 || true
+            '''
         }
     }
 }

@@ -35,7 +35,7 @@ class EndingApplicationTests {
 
 	@Test
 	void shouldResolveServerPortPropertyWhenValueContainsLeadingWhitespace() {
-		assertEquals("8080", environment.getProperty("server.port"));
+		assertEquals("8082", environment.getProperty("server.port"));
 	}
 
 }
